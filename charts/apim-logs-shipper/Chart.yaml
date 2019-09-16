@@ -1,0 +1,6 @@
+apiVersion: v1
+appVersion: "1.0"
+description: APIM Logs Shipper
+name: apim-logs-shipper
+version: 0.1.0
+

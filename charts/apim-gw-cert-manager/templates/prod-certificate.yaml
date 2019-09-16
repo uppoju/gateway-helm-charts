@@ -1,0 +1,20 @@
+{{- if .Values.prodEnabled }}
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: {{ .Values.prodCertificateName }}
+spec:
+  secretName: {{ .Values.prodCertificateSecretName }}
+  issuerRef:
+    name: {{ .Values.prodClusterIssuerName }}
+    kind: ClusterIssuer
+  commonName: {{ .Values.certDomainName | quote }}
+  dnsNames:
+    - {{ .Values.certDomainName | quote }}
+  acme:
+    config:
+      - dns01:
+          provider: {{ .Values.dnsProviderName }}
+        domains:
+          - {{ .Values.certDomainName | quote }}
+{{- end }}

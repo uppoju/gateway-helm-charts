@@ -1,0 +1,114 @@
+# Default values for gateway.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+revisionHistoryLimit: 10
+updateStrategy: {}
+  # type: RollingUpdate
+  # rollingUpdate:
+  #   maxSurge: 1
+#   maxUnavailable: 0
+container:
+  image: docker.k8s.apimsvc.ca.com/repository/docker-hosted/gateway
+  tag: gateway_json-135
+  pullPolicy: Always
+
+imageCredentials:
+    name: docker.k8s.apimsvc.ca.com
+    registry: docker.k8s.apimsvc.ca.com
+    username: admin
+    password:
+
+service:
+  type: LoadBalancer
+  # clusterIP: None
+  ## LoadBalancer IP if service.type is LoadBalancer
+  ## Default: nil
+  ##
+  # loadBalancerIP: 10.2.2.2
+  ports:
+    - name: http
+      internal: 8080
+      external: 80
+    - name: https
+      internal: 8443
+      external: 443
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 120
+  timeoutSeconds: 5
+  periodSeconds: 5
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 20
+  failureThreshold: 20
+  timeoutSeconds: 1
+  periodSeconds: 5
+  successThreshold: 1
+
+
+resources:
+  requests:
+    memory: 2Gi
+    cpu: 1
+  limits:
+    memory: 4Gi
+    cpu: 3
+
+nodeSelector: {}
+
+tolerations: []
+
+afinity: {}
+
+gateway:
+  heapSize: "3g"
+  javaArgs: ""
+  license:
+    value:
+    accept: false
+  customTlsKey:
+    enabled: false
+    secretName: gw-tls
+    cert: tls.crt
+    pem: tls.key
+
+
+hazelcast:
+  enabled: true
+  fullnameOverride: gw-hazelcast
+  hazelcast:
+  # configurationFiles are Hazelcast configuration files
+    # rest is a flag used to enable REST endpoints for Hazelcast member
+    rest: true
+    # javaOpts are additional JAVA_OPTS properties for Hazelcast member
+    javaOpts:
+    configurationFiles:
+      hazelcast.xml: |-
+        <?xml version="1.0" encoding="UTF-8"?>
+        <hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.10.xsd"
+                       xmlns="http://www.hazelcast.com/schema/config"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <properties>
+            <property name="hazelcast.discovery.enabled">true</property>
+          </properties>
+          <network>
+            <join>
+              <multicast enabled="false"/>
+              <kubernetes enabled="true">
+                <service-name>${serviceName}</service-name>
+                <namespace>${namespace}</namespace>
+                <resolve-not-ready-addresses>true</resolve-not-ready-addresses>
+              </kubernetes>
+            </join>
+          </network>
+        </hazelcast>
+

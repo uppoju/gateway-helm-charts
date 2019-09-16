@@ -1,0 +1,44 @@
+filebeat:
+
+  config:
+    filebeat.autodiscover:
+      providers:
+        - type: kubernetes
+          hints.enabled: true
+
+    filebeat.modules:
+      - module: elasticsearch
+        # Server log
+        server:
+          enabled: true
+
+    output.file:
+        enabled: false
+
+    output.elasticsearch:
+        hosts: "http://apim-logs-runtime-elasticsearch-client:9200"
+
+    filebeat.prospectors:
+      - type: log
+        enabled: true
+        paths:
+          - /var/log/*.log
+          - /var/log/messages
+          - /var/log/syslog
+      - type: docker
+        containers.ids:
+        - "*"
+        json.keys_under_root: true
+        json.ignore_decoding_error: true
+        processors:
+          - add_kubernetes_metadata:
+              in_cluster: true
+          - drop_event:
+              when:
+                equals:
+                  kubernetes.container.name: "filebeat"
+
+
+  # This requires a Kibana endpoint configuration.
+  setup.kibana:
+    host: "http://apim-logs-runtime-kibana:5601"

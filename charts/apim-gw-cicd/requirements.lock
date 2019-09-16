@@ -1,0 +1,9 @@
+dependencies:
+- name: sonatype-nexus
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  version: 1.15.1
+- name: jenkins
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  version: 0.28.3
+digest: sha256:74d748e28878d30decd9f98632fe4267ecf8612e737ee6ea9cd9c70535faf1df
+generated: 2019-01-09T12:18:19.0398507-08:00

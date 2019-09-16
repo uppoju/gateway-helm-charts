@@ -1,0 +1,6 @@
+apiVersion: v1
+appVersion: "1.0"
+description: APIM Logs Runtime
+name: apim-logs-runtime
+version: 0.1.0
+

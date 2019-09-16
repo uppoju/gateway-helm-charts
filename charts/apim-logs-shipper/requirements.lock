@@ -1,0 +1,6 @@
+dependencies:
+- name: filebeat
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  version: 1.1.2
+digest: sha256:00ff1fa76f03d5eb8aaa1613521fbaa0e52a6f1d527f29adf675243a36441540
+generated: 2019-01-17T14:03:03.339363-08:00

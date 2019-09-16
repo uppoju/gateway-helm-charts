@@ -1,0 +1,127 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "gateway.fullname" . }}
+  labels:
+    app: {{ template "gateway.name" . }}
+    chart: {{ template "gateway.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+{{- if .Values.updateStrategy }}
+  strategy:
+{{ toYaml .Values.updateStrategy | indent 4 }}
+{{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "gateway.fullname" . }}
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+         - name: {{ .Values.imageCredentials.name | quote }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.container.image }}:{{ .Values.container.tag }}
+          imagePullPolicy: {{ .Values.container.pullPolicy }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          ports:
+            {{- range .Values.service.ports }}
+            - containerPort: {{ .internal }}
+            {{- end }}
+          volumeMounts:
+{{- if .Values.gateway.env.gatewayPrivateKeys }}
+            - name: gateway-private-keys
+              mountPath: /opt/SecureSpan/Gateway/node/default/etc/bootstrap/env/config/privateKeys
+{{- end }}
+            - name: {{ template "gateway.fullname" . }}-license-xml
+              mountPath: /opt/SecureSpan/Gateway/node/default/etc/bootstrap/license/license.xml
+              subPath: license.xml
+            - name: {{ template "gateway.fullname" . }}-hazelcast-client
+              mountPath: /opt/SecureSpan/Gateway/node/default/etc/bootstrap/assertions/ExternalHazelcastSharedStateProviderAssertion/hazelcast-client.xml
+              subPath: hazelcast-client.xml
+            - name: {{ template "gateway.fullname" . }}-log-config-override
+              mountPath: /opt/SecureSpan/Gateway/node/default/etc/conf/log-override.properties
+              subPath: log-override.properties
+          env:
+            - name: ACCEPT_LICENSE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "gateway.fullname" . }}
+                  key: accept.license
+            - name: EXTRA_JAVA_ARGS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "gateway.fullname" . }}
+                  key: extra-java-args.env
+            - name: SSG_JVM_HEAP
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "gateway.fullname" . }}
+                  key: ssg-jvm-heap.env
+{{- if  .Values.gateway.customTlsKey.enabled }}
+            - name: SSG_SSL_KEY_PEM
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gateway.customTlsKey.secretName }}
+                  key: {{ .Values.gateway.customTlsKey.pem }}
+            - name: SSG_SSL_KEY_PEM_CERTS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gateway.customTlsKey.secretName }}
+                  key: {{ .Values.gateway.customTlsKey.cert }}
+{{- end }}
+{{- range $name, $value := .Values.gateway.env }}
+{{- if not (empty $value) }}
+            - name: {{ $name | quote }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+              - /opt/docker/rc.d/diagnostic/health_check.sh
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+{{- end }}
+{{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+              - /opt/docker/rc.d/diagnostic/health_check.sh
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+{{- end }}
+      volumes:
+{{- if .Values.gateway.env.gatewayPrivateKeys }}
+        - name: gateway-private-keys
+          secret:
+            secretName: gateway-private-keys
+{{- end }}
+        - name: {{ template "gateway.fullname" . }}-license-xml
+          secret:
+            secretName: {{ template "gateway.fullname" .}}-license
+            items:
+            - key: license
+              path: license.xml
+        - name: {{ template "gateway.fullname" . }}-hazelcast-client
+          configMap:
+            name: {{ template "gateway.fullname" . }}
+            items:
+            - key: hazelcast-xml
+              path: hazelcast-client.xml
+        - name: {{ template "gateway.fullname" . }}-log-config-override
+          configMap:
+            name: {{ template "gateway.fullname" . }}
+            items:
+            - key: log-override-properties
+              path: log-override.properties

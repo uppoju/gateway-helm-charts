@@ -1,0 +1,104 @@
+nexusAdminPassword: "admin123"
+
+sonatype-nexus:
+
+  nexusProxy:
+    env:
+      nexusDockerHost: docker.example.com
+      nexusHttpHost: nexus.example.com
+
+  ingress:
+    enabled: true
+    path: /*
+    annotations:
+      kubernetes.io/ingress.class: gce
+      kubernetes.io/ingress.global-static-ip-name: "nexus-ip"
+    tls:
+      enabled: true
+      secretName: tls
+
+jenkins:
+
+  Master:
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "1024Mi"
+
+    # AdminPassword:
+    ServiceType: NodePort # change to NodePort once working
+    HostName: jenkins.example.com
+
+    Ingress:
+      Path: /*
+      Annotations:
+        kubernetes.io/ingress.class: gce
+        kubernetes.io/ingress.global-static-ip-name: "jenkins-ip"
+      TLS:
+        - secretName: tls
+          hosts:
+            - jenkins.example.com
+
+    InstallPlugins:
+      - kubernetes:1.13.5
+      - workflow-job:2.32
+      - workflow-aggregator:2.6
+      - credentials-binding:1.18
+      - git:3.9.3
+      - github-branch-source:2.4.1
+    NumExecutors: 1
+    Jobs:
+      test-job: |-
+        <?xml version='1.0' encoding='UTF-8'?>
+        <flow-definition plugin="workflow-job@2.25">
+        <description></description>
+        <keepDependencies>false</keepDependencies>
+        <properties>
+            <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.29.3">
+                <projectUrl>https://github.com/CAAPIM/ephemeral-gateway-skeleton-repo/</projectUrl>
+                <displayName></displayName>
+            </com.coravy.hudson.plugins.github.GithubProjectProperty>
+            <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+                <triggers>
+                    <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.29.3">
+                        <spec></spec>
+                    </com.cloudbees.jenkins.GitHubPushTrigger>
+                </triggers>
+            </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+        </properties>
+        <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@2.60">
+            <scm class="hudson.plugins.git.GitSCM" plugin="git@3.9.1">
+                <configVersion>2</configVersion>
+                <userRemoteConfigs>
+                    <hudson.plugins.git.UserRemoteConfig>
+                        <url>https://github.com/CAAPIM/ephemeral-gateway-skeleton-repo</url>
+                    </hudson.plugins.git.UserRemoteConfig>
+                </userRemoteConfigs>
+                <branches>
+                    <hudson.plugins.git.BranchSpec>
+                        <name>*/master</name>
+                    </hudson.plugins.git.BranchSpec>
+                </branches>
+                <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+                <submoduleCfg class="list"/>
+                <extensions/>
+            </scm>
+            <scriptPath>Jenkinsfile</scriptPath>
+            <lightweight>true</lightweight>
+        </definition>
+        <triggers/>
+        <disabled>false</disabled>
+
+  Persistence:
+    volumes:
+      - name: docker-socket-volume
+        hostPath:
+          path: /var/run/docker.sock
+      - name: docker-binary
+        hostPath:
+          path: /usr/bin/docker
+    mounts:
+      - mountPath: /var/run/docker.sock
+        name: docker-socket-volume
+      - mountPath: /usr/bin/docker
+        name: docker-binary

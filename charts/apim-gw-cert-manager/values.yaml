@@ -1,0 +1,21 @@
+stagingEnabled: true
+prodEnabled: false
+
+stagingClusterIssuerName: letsencrypt-staging
+stagingCertificateName: stable1-apimgcp-com-staging
+stagingCertificateSecretName: stable1-apimgcp-com-tls-staging
+
+prodClusterIssuerName: letsencrypt-prod
+prodCertificateName: stable1-apimgcp-com-prod
+prodCertificateSecretName: stable1-apimgcp-com-tls-prod
+
+dnsProviderName: clouddns
+certDomainName: '*.stable1.apimgcp.com'
+
+acmeEmail: # set email address here
+
+# Google Cloud DNS details for ClusterIssuer ACME DNS01 validation
+clouddnsServiceAccountSecretRefName: clouddns
+clouddnsServiceAccountSecretRefKey: clouddns.key.json
+clouddnsProject: api-management-178215
+clouddnsServiceAccountKeyFile: # set this key with --set-file

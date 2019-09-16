@@ -1,0 +1,9 @@
+dependencies:
+- name: elasticsearch
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  version: 1.17.0
+- name: kibana
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  version: 1.1.2
+digest: sha256:e29a8d4102be8d89486008d88483622026444541c6788c243eb8ce5e64bf2f2a
+generated: 2019-01-15T11:31:09.794954-08:00
